@@ -4,8 +4,13 @@ name: Uptime probe
 # It lives in this PUBLIC repository because Actions minutes are free here;
 # the same schedule in the products' private repos would bill ~4,000 minutes
 # a month. Only public URLs and this script are in the repository. The
-# Telegram credentials are repository secrets, and no trigger here runs code
-# from a pull request, so a fork can never read them.
+# Telegram credentials are repository secrets. Keep it that way:
+#   - NEVER add a pull_request / pull_request_target / issue_comment trigger;
+#     schedule and a maintainer's manual run are the only ways in.
+#   - Every action is pinned to a full commit SHA (a moved tag cannot swap
+#     in code that reads the secrets).
+#   - The workflow token is read-only; only the keepalive job gets
+#     actions: write, to re-enable this workflow.
 #
 # Limits, stated plainly: GitHub can delay or skip scheduled runs under load,
 # so this is a 10-minute check, not a pager. GitHub also disables schedules in
@@ -34,11 +39,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Restore strike counts
         if: inputs.test_url == ''
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: state.txt
           key: uptime-state-${{ github.run_id }}
@@ -63,7 +70,7 @@ jobs:
 
       - name: Save strike counts
         if: always() && inputs.test_url == ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: state.txt
           key: uptime-state-${{ github.run_id }}
