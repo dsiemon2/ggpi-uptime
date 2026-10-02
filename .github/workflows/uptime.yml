@@ -1,0 +1,88 @@
+name: Uptime probe
+
+# Off-host check of Go Green Verify and DocGen AI (GGV SOC 2 control A3).
+# It lives in this PUBLIC repository because Actions minutes are free here;
+# the same schedule in the products' private repos would bill ~4,000 minutes
+# a month. Only public URLs and this script are in the repository. The
+# Telegram credentials are repository secrets, and no trigger here runs code
+# from a pull request, so a fork can never read them.
+#
+# Limits, stated plainly: GitHub can delay or skip scheduled runs under load,
+# so this is a 10-minute check, not a pager. GitHub also disables schedules in
+# a public repository after 60 days without activity; the keepalive job below
+# re-enables this workflow every Monday to prevent that.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      test_url:
+        description: "Probe ONLY this URL (expects 200) and alert on the first failure. For proving the alert path."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore strike counts
+        if: inputs.test_url == ''
+        uses: actions/cache/restore@v4
+        with:
+          path: state.txt
+          key: uptime-state-${{ github.run_id }}
+          restore-keys: uptime-state-
+
+      - name: Probe
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEST_URL: ${{ inputs.test_url }}
+        shell: bash
+        run: |
+          if [ -n "$TEST_URL" ]; then
+            # A manual test: one target, already at one strike, so a failure
+            # alerts immediately. Uses a throwaway state file, never the real one.
+            printf 'ALERT TEST (manual run, ignore)|%s|200|-\n' "$TEST_URL" > test-targets.txt
+            echo "ALERT_TEST__manual_run__ignore_=1" > test-state.txt
+            bash probe.sh test-targets.txt test-state.txt
+          else
+            bash probe.sh targets.txt state.txt
+          fi
+
+      - name: Save strike counts
+        if: always() && inputs.test_url == ''
+        uses: actions/cache/save@v4
+        with:
+          path: state.txt
+          key: uptime-state-${{ github.run_id }}
+
+  keepalive:
+    # Re-enable this workflow weekly, so 60 quiet days cannot switch it off.
+    if: github.event_name == 'schedule' && github.event.schedule == '*/10 * * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable on Mondays at 00:00-00:09 UTC
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%u%H)" = "100" ] && [ "$(date -u +%M)" -lt 10 ]; then
+            gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/uptime.yml/enable"
+            echo "re-enabled"
+          else
+            echo "not this run"
+          fi

@@ -1,0 +1,8 @@
+# name | url | expected HTTP status | text the body must contain ("-" = no body check)
+# Public endpoints only. This repository is public; nothing here is a secret.
+GGV API|https://api.gogreenverify.com/healthz|200|"status":"ok"
+GGV web|https://www.gogreenverify.com/|200|-
+GGV MCP|https://api.gogreenverify.com/mcp|401|-
+DocGen AI API|https://api.gogreendocai.com/v1/health|200|"status":"ok"
+DocGen AI web|https://www.gogreendocai.com/|200|-
+DocGen AI MCP|https://api.gogreendocai.com/mcp/health|200|-
