@@ -1,6 +1,6 @@
 # ggpi-uptime
 
-Outside-in availability check for **Go Green Verify** and **DocGen AI**,
+Outside-in availability check for **Go Green Verify**, **DocGen AI** and **RecruitAbility AI**,
 run every 10 minutes on GitHub's runners (`.github/workflows/uptime.yml`).
 
 - **What:** the public endpoints in `targets.txt`, each with an expected

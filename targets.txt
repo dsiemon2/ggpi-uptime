@@ -6,3 +6,5 @@ GGV MCP|https://api.gogreenverify.com/mcp|401|-
 DocGen AI API|https://api.gogreendocai.com/v1/health|200|"status":"ok"
 DocGen AI web|https://www.gogreendocai.com/|200|-
 DocGen AI MCP|https://api.gogreendocai.com/mcp/health|200|-
+RecruitAbility AI health|https://www.recruitabilityai.com/healthz|200|"status":"ok"
+RecruitAbility AI web|https://www.recruitabilityai.com/|200|-
